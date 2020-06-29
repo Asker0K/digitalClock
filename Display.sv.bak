@@ -1,0 +1,223 @@
+module counter #(
+    parameter initial_value // инициализирующее число 0_1011_0111_1010_1100
+)
+(
+    input logic reset,
+    input logic clk,
+
+    output logic [3:0] num [5:0]
+
+);
+
+logic [25:0] cnt;
+logic [3:0] sec_e;
+logic [3:0] sec_d;
+logic [3:0] min_e;
+logic [3:0] min_d;
+logic [3:0] hour_e;
+logic [3:0] hour_d;
+logic [3:0] dig_int;
+logic [6:0] seg_int;
+
+//Переводим секунды в 24часовой формат
+logic [31:0]  hours;
+logic [31:0]  minutes;
+logic [31:0]  seconds;
+
+always_ff @(posedge clk or negedge reset)
+begin
+    if(~reset)
+        begin
+			for (logic[31:0] i = initial_value; i != 0; i = i - 1) begin
+				if (sec_e == 9) 
+				begin
+					sec_e <=0;
+					if (sec_d == 5) 
+					begin
+						sec_d <= 0;
+						if( min_e == 9) 
+						begin
+							min_e <= 0;
+							if (min_d == 5) 
+							begin
+								min_d <=0;
+								if(hour_e == 3) 
+								begin
+									hour_e <= 0;
+									if( hour_d == 2) 
+									begin
+										hour_d <=0;
+									else
+										hour_d <= hour_d +1;
+									end//begin
+								else
+									hour_e <= hour_e +1;
+								end//begin
+							else
+								min_d <= min_d +1;
+							end//begin
+						else
+							min_e <= min_e +1;
+						end//begin
+					else
+						sec_d <= sec_d +1;
+					end//begin
+				else
+					sec_e <= sec_e +1;
+				end//begin
+				
+			end
+            cnt    <=26'b0;
+        end//begin
+    else 
+    begin
+        if( cnt[25:0] == 50000000) 
+        begin
+            cnt <= 0;
+            if (sec_e == 9) 
+            begin
+                sec_e <=0;
+                if (sec_d == 5) 
+                begin
+                    sec_d <= 0;
+                    if( min_e == 9) 
+                    begin
+                        min_e <= 0;
+                        if (min_d == 5) 
+                        begin
+                            min_d <=0;
+                            if(hour_e == 3) 
+                            begin
+                                hour_e <= 0;
+                                if( hour_d == 2) 
+                                begin
+                                    hour_d <=0;
+                                else
+                                    hour_d <= hour_d +1;
+                                end//begin
+                            else
+                                hour_e <= hour_e +1;
+                            end//begin
+                        else
+                            min_d <= min_d +1;
+                        end//begin
+                    else
+                        min_e <= min_e +1;
+                    end//begin
+                else
+                    sec_d <= sec_d +1;
+                end//begin
+            else
+                sec_e <= sec_e +1;
+            end//begin
+        else
+            cnt <= cnt + 1;
+
+            case(cnt[15:13])
+                0 : begin dig_int <= 6'b000001; num[0] <= hour_d; end
+                1 : begin dig_int <= 6'b000010; num[1] <= hour_e; end
+                2 : begin dig_int <= 6'b000100; num[2] <= min_d; end
+                3 : begin dig_int <= 6'b001000; num[3] <= min_e; end
+                4 : begin dig_int <= 6'b010000; num[4] <= sec_d; end
+                5 : begin dig_int <= 6'b100000; num[5] <= sec_e; end
+            endcase
+
+    end//else
+end // always_ff
+
+assign dig = dig_int;
+assign seg = seg_int;
+
+endmodule
+
+
+
+module Display
+(
+    input logic [3:0] num [5:0],
+	
+	output logic [6:0] seg [5:0]
+);
+
+// вывод на семисегментный дисплей
+always_comb begin
+	case(num[0]) //hour_d
+		0: seg[0] <= 7'b1000000;
+		1: seg[0] <= 7'b1111001;
+		2: seg[0] <= 7'b0100100;
+		3: seg[0] <= 7'b0110000;
+		4: seg[0] <= 7'b0011001;
+		5: seg[0] <= 7'b0010010;
+		6: seg[0] <= 7'b0000010;
+		7: seg[0] <= 7'b1111000;
+		8: seg[0] <= 7'b0000000;
+		9: seg[0] <= 7'b0010000;
+		default : seg[0] <= 7'b1111111;
+	endcase
+	case(num[1]) //hour_e
+		0: seg[1] <= 7'b1000000;
+		1: seg[1] <= 7'b1111001;
+		2: seg[1] <= 7'b0100100;
+		3: seg[1] <= 7'b0110000;
+		4: seg[1] <= 7'b0011001;
+		5: seg[1] <= 7'b0010010;
+		6: seg[1] <= 7'b0000010;
+		7: seg[1] <= 7'b1111000;
+		8: seg[1] <= 7'b0000000;
+		9: seg[1] <= 7'b0010000;
+		default : seg[1] <= 7'b1111111;
+	endcase
+	case(num[2]) //min_d
+		0: seg[2] <= 7'b1000000;
+		1: seg[2] <= 7'b1111001;
+		2: seg[2] <= 7'b0100100;
+		3: seg[2] <= 7'b0110000;
+		4: seg[2] <= 7'b0011001;
+		5: seg[2] <= 7'b0010010;
+		6: seg[2] <= 7'b0000010;
+		7: seg[2] <= 7'b1111000;
+		8: seg[2] <= 7'b0000000;
+		9: seg[2] <= 7'b0010000;
+		default : seg[2] <= 7'b1111111;
+	endcase
+	case(num[3]) //min_e
+		0: seg[3] <= 7'b1000000;
+		1: seg[3] <= 7'b1111001;
+		2: seg[3] <= 7'b0100100;
+		3: seg[3] <= 7'b0110000;
+		4: seg[3] <= 7'b0011001;
+		5: seg[3] <= 7'b0010010;
+		6: seg[3] <= 7'b0000010;
+		7: seg[3] <= 7'b1111000;
+		8: seg[3] <= 7'b0000000;
+		9: seg[3] <= 7'b0010000;
+		default : seg[3] <= 7'b1111111;
+	endcase
+	case(num[4]) //sec_d
+		0: seg[4] <= 7'b1000000;
+		1: seg[4] <= 7'b1111001;
+		2: seg[4] <= 7'b0100100;
+		3: seg[4] <= 7'b0110000;
+		4: seg[4] <= 7'b0011001;
+		5: seg[4] <= 7'b0010010;
+		6: seg[4] <= 7'b0000010;
+		7: seg[4] <= 7'b1111000;
+		8: seg[4] <= 7'b0000000;
+		9: seg[4] <= 7'b0010000;
+		default : seg[4] <= 7'b1111111;
+	endcase
+	case(num[5]) //sec_e
+		0: seg[5] <= 7'b1000000;
+		1: seg[5] <= 7'b1111001;
+		2: seg[5] <= 7'b0100100;
+		3: seg[5] <= 7'b0110000;
+		4: seg[5] <= 7'b0011001;
+		5: seg[5] <= 7'b0010010;
+		6: seg[5] <= 7'b0000010;
+		7: seg[5] <= 7'b1111000;
+		8: seg[5] <= 7'b0000000;
+		9: seg[5] <= 7'b0010000;
+		default : seg[5] <= 7'b1111111;
+	endcase
+end
+endmodule
